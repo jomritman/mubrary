@@ -26,7 +26,8 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
         results = dc.search(search_artist, type='artist')
         if len(results) > 0:
             artist_id = results[0].data['id']
-            releases_url = 'https://api.discogs.com/artists/{}/releases'.format(artist_id)
+            releases_url = 'https://api.discogs.com/artists/{}/releases?page=1&per_page=100'.format(artist_id)
+            page = 1
             while releases_url is not None:
                 release_info = dc._get(releases_url)
                 for release in release_info['releases']:
@@ -45,7 +46,9 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
                 if release_info['pagination']['page'] == release_info['pagination']['pages']:
                     releases_url = None
                 else:
-                    releases_url = release_info['pagination']['urls']['next']
+                    page += 1
+                    releases_url = releases_url = 'https://api.discogs.com/artists/{}/releases?page={}&per_page=100'.format(artist_id,page)
+            
 
     with open(save_path/"{}.json".format(artist_name), "w") as outfile:
         json.dump(release_dict, outfile)
