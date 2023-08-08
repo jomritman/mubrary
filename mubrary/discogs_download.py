@@ -27,20 +27,25 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
         if len(results) > 0:
             artist_id = results[0].data['id']
             releases_url = 'https://api.discogs.com/artists/{}/releases'.format(artist_id)
-            release_info = dc._get(releases_url)
-            for release in release_info['releases']:
-                if search_artist in release['artist']:
-                    release_name = release['title']
-                    if release_name not in release_names:
-                        release_names.append(release_name)
-                        if 'main_release' in release.keys():
-                            release_id = release['main_release']
-                        else:
-                            release_id = release['id']
-                        release_url = 'https://api.discogs.com/releases/{}'.format(release_id)
-                        release_obj = dc._get(release_url)
-                        release_dict[release_name] = release_obj
-                        sleep(1)
+            while releases_url is not None:
+                release_info = dc._get(releases_url)
+                for release in release_info['releases']:
+                    if search_artist in release['artist']:
+                        release_name = release['title']
+                        if release_name not in release_names:
+                            release_names.append(release_name)
+                            if 'main_release' in release.keys():
+                                release_id = release['main_release']
+                            else:
+                                release_id = release['id']
+                            release_url = 'https://api.discogs.com/releases/{}'.format(release_id)
+                            release_obj = dc._get(release_url)
+                            release_dict[release_name] = release_obj
+                            sleep(1)
+                if release_info['pagination']['page'] == release_info['pagination']['pages']:
+                    releases_url = None
+                else:
+                    releases_url = release_info['pagination']['urls']['next']
 
     with open(save_path/"{}.json".format(artist_name), "w") as outfile:
         json.dump(release_dict, outfile)

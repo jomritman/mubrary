@@ -13,6 +13,8 @@ class MusicLibrary:
 
     def add_artist(self, artist_name, alt_names=[], overwrite=False):
         self.artists.append(artist_name)
+        while '' in alt_names:
+            alt_names.remove('')
         if ('{}.json'.format(artist_name) not in os.listdir(self.save_path/'Raw Downloads')) or overwrite:
             self.artist_dict[artist_name] = download_artist(artist_name, alt_names, self.save_path/'Raw Downloads')
         else:
