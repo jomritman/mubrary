@@ -13,6 +13,8 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
         alt_name_list = [artist_name]
     
     client_name = 'jomritman_mubrary'
+    max_pages = 10
+    max_tries = 5
 
     # Read in token
     with open('token.txt', 'r') as file:
@@ -29,26 +31,31 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
             releases_url = 'https://api.discogs.com/artists/{}/releases?page=1&per_page=100'.format(artist_id)
             page = 1
             while releases_url is not None:
-                release_info = dc._get(releases_url)
-                for release in release_info['releases']:
-                    if search_artist in release['artist']:
-                        release_name = release['title']
-                        if release_name not in release_names:
-                            release_names.append(release_name)
-                            if 'main_release' in release.keys():
-                                release_id = release['main_release']
-                            else:
-                                release_id = release['id']
-                            release_url = 'https://api.discogs.com/releases/{}'.format(release_id)
-                            release_obj = dc._get(release_url)
-                            release_dict[release_name] = release_obj
-                            sleep(1)
-                if release_info['pagination']['page'] == release_info['pagination']['pages']:
+                tries = 0
+                while tries < max_tries:
+                    try:
+                        release_info = dc._get(releases_url)
+                        for release in release_info['releases']:
+                            if search_artist in release['artist']:
+                                release_name = release['title']
+                                if release_name not in release_names:
+                                    release_names.append(release_name)
+                                    if 'main_release' in release.keys():
+                                        release_id = release['main_release']
+                                    else:
+                                        release_id = release['id']
+                                    release_url = 'https://api.discogs.com/releases/{}'.format(release_id)
+                                    release_obj = dc._get(release_url)
+                                    release_dict[release_name] = release_obj
+                                    sleep(1)
+                        tries = max_tries
+                    except:
+                        tries += 1
+                if (page == release_info['pagination']['pages']) or (page == max_pages):
                     releases_url = None
                 else:
                     page += 1
                     releases_url = releases_url = 'https://api.discogs.com/artists/{}/releases?page={}&per_page=100'.format(artist_id,page)
-            
 
     with open(save_path/"{}.json".format(artist_name), "w") as outfile:
         json.dump(release_dict, outfile)

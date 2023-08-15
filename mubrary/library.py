@@ -1,6 +1,9 @@
 import os
 import json
+import numpy as np
+import pandas as pd
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 from mubrary.discogs_download import download_artist
 
@@ -20,6 +23,27 @@ class MusicLibrary:
         else:
             with open(self.save_path/'Raw Downloads'/'{}.json'.format(artist_name), 'r') as infile: 
                 self.artist_dict[artist_name] = json.load(infile)
+
+    def filter_artist(self, artist):
+        release_dict = self.artist_dict[artist]
+        cols = ['name','have','want']
+        wantage = pd.DataFrame([],columns=cols)
+        for name, release in release_dict.items():
+            wantage_list = [name,release['community']['have'],
+                            release['community']['want']]
+            release_wantage = pd.DataFrame([wantage_list],index=[release['year']],
+                                            columns=cols)
+            wantage = pd.concat([wantage,release_wantage],axis=0)
+        wantage = wantage.sort_index()
+        page_len = 50
+        num_releases = wantage.shape[0]
+        for starting_release in np.arange(0,num_releases,page_len):
+            page = wantage.iloc[starting_release:min(num_releases,starting_release+page_len)]
+            plt.bar(page['name'],page['have'],label='have')
+            plt.bar(page['name'],page['have']+page['want'],label='want')
+            plt.xticks(rotation = 45) 
+            plt.legend()
+            plt.show()
 
     def set_save_path(self, path):
         if type(path) is not Path:
