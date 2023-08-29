@@ -10,5 +10,5 @@ my_library.set_save_path(library_path)
 my_library.load_from_json("{}.json".format(library_name))
 toc = time()
 
-artist = 'AC DC'
-my_library.filter_artist(artist)
+for artist in my_library.artists:
+    my_library.filter_artist(artist)
