@@ -22,14 +22,16 @@ with open(Path(library_path)/'mubrary artists.csv', 'r') as infile:
         if '' in artist_dict[line[0]]:
             artist_dict[line[0]].remove('')
 
-for artist, alt_names in artist_dict.items():
+my_library.load_from_json("{}.json".format(library_name))
 
-    my_library.load_from_json("{}.json".format(library_name))
+for artist, alt_names in artist_dict.items():
 
     if artist not in my_library.artists:
         my_library.add_artist(artist,alt_names)
-    print(artist+'\n')
-    for release in list(my_library.artist_dict[artist].keys()):
-        print('\t'+release+'\n')
-
-    my_library.save_to_json("{}.json".format(library_name))
+        my_library.filter_artist(artist, want_thresh=13)
+        print(artist+'\n')
+        if artist in list(my_library.filtered_release_basics.keys()):
+            for release in list(my_library.filtered_release_basics[artist].values()):
+                print('\t'+release['title']+', want: '+str(release['stats']['community']['in_wantlist'])+', have: '+str(release['stats']['community']['in_collection'])+'\n')
+        my_library.get_artist_details(artist)
+my_library.save_to_json("{}.json".format(library_name))

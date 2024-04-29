@@ -4,8 +4,24 @@ from pathlib import Path
 import discogs_client
 from time import sleep
 
-def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
+"""
+discogs_download.py
 
+This is a library of functions that can be used to download information about artists and their releases
+using the discogs.com API. Requires only very common python packages seen above as well as discogs_client
+
+"""
+
+def download_artist_basics(artist_name, alt_name_list = [], save_path = Path('')):
+
+    '''
+    Downloads basic information about an artist and saves it to a .json file and returns it as a dict
+    Required input:     artist_name (str) - the name of the artist
+    Optional inputs:    alt_name_list (list) - a list of strs of possible alternate names
+                                                ("The" at the beginning, "&" instead of "and", etc.)
+                        save_path - str or Path of where to save the .json file
+    '''
+    
     if type(save_path) is str:
         save_path = Path(save_path) 
 
@@ -22,7 +38,7 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
 
     dc = discogs_client.Client(client_name,user_token=user_token)
 
-    release_dict = {}
+    artist_dict = {}
     release_names = []
     for search_artist in alt_name_list:
         results = dc.search(search_artist, type='artist')
@@ -36,21 +52,17 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
                     try:
                         release_info = dc._get(releases_url)
                         for release in release_info['releases']:
-                            if search_artist in release['artist']:
+                            if release['artist'] in alt_name_list:
                                 release_name = release['title']
                                 if release_name not in release_names:
-                                    release_names.append(release_name)
-                                    if 'main_release' in release.keys():
-                                        release_id = release['main_release']
-                                    else:
-                                        release_id = release['id']
-                                    release_url = 'https://api.discogs.com/releases/{}'.format(release_id)
-                                    release_obj = dc._get(release_url)
-                                    release_dict[release_name] = release_obj
-                                    sleep(1)
+                                    if release['type'] == 'master':
+                                        release_names.append(release_name)
+                                        artist_dict[release_name] = release
                         tries = max_tries
                     except:
                         tries += 1
+                        if tries == max_tries:
+                            raise ConnectionError('Maximum attempts to query discogs.com exceeded!')
                 if (page == release_info['pagination']['pages']) or (page == max_pages):
                     releases_url = None
                 else:
@@ -58,6 +70,28 @@ def download_artist(artist_name, alt_name_list = [], save_path = Path('')):
                     releases_url = releases_url = 'https://api.discogs.com/artists/{}/releases?page={}&per_page=100'.format(artist_id,page)
 
     with open(save_path/"{}.json".format(artist_name), "w") as outfile:
-        json.dump(release_dict, outfile)
+        json.dump(artist_dict, outfile)
 
-    return release_dict
+    return artist_dict
+
+def download_release_details(release):
+
+    release_url = 'https://api.discogs.com/releases/{}'.format(str(release['main_release']))
+    client_name = 'jomritman_mubrary'
+    max_pages = 10
+    max_tries = 5
+
+    # Read in token
+    with open('token.txt', 'r') as file:
+        user_token = file.read()
+
+    dc = discogs_client.Client(client_name,user_token=user_token)
+    tries = 0
+    while tries < max_tries:
+        try:
+            release_details = dc._get(release_url)
+            tries = max_tries
+        except:
+            tries += 1
+
+    return release_details

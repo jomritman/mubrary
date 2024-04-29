@@ -11,4 +11,4 @@ my_library.load_from_json("{}.json".format(library_name))
 toc = time()
 
 for artist in my_library.artists:
-    my_library.filter_artist(artist)
+    my_library.filter_artist(artist, plot_bars=True, plot_counts=True)
