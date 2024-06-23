@@ -40,34 +40,37 @@ def download_artist_basics(artist_name, alt_name_list = [], save_path = Path('')
 
     artist_dict = {}
     release_names = []
+    artist_ids = []
     for search_artist in alt_name_list:
         results = dc.search(search_artist, type='artist')
         if len(results) > 0:
             artist_id = results[0].data['id']
-            releases_url = 'https://api.discogs.com/artists/{}/releases?page=1&per_page=100'.format(artist_id)
-            page = 1
-            while releases_url is not None:
-                tries = 0
-                while tries < max_tries:
-                    try:
-                        release_info = dc._get(releases_url)
-                        for release in release_info['releases']:
-                            if release['artist'] in alt_name_list:
+            if artist_id not in artist_ids:
+                artist_ids.append(artist_id)
+                releases_url = 'https://api.discogs.com/artists/{}/releases?page=1&per_page=100'.format(artist_id)
+                page = 1
+                while releases_url is not None:
+                    tries = 0
+                    while tries < max_tries:
+                        try:
+                            release_info = dc._get(releases_url)
+                            for release in release_info['releases']:
                                 release_name = release['title']
-                                if release_name not in release_names:
-                                    if release['type'] == 'master':
-                                        release_names.append(release_name)
-                                        artist_dict[release_name] = release
-                        tries = max_tries
-                    except:
-                        tries += 1
-                        if tries == max_tries:
-                            raise ConnectionError('Maximum attempts to query discogs.com exceeded!')
-                if (page == release_info['pagination']['pages']) or (page == max_pages):
-                    releases_url = None
-                else:
-                    page += 1
-                    releases_url = releases_url = 'https://api.discogs.com/artists/{}/releases?page={}&per_page=100'.format(artist_id,page)
+                                if release['role'] == 'Main':
+                                    if release_name in release_names:
+                                        release_name += '*'
+                                    release_names.append(release_name)
+                                    artist_dict[release_name] = release
+                            tries = max_tries
+                        except:
+                            tries += 1
+                            if tries == max_tries:
+                                raise ConnectionError('Maximum attempts to query discogs.com exceeded!')
+                    if (page == release_info['pagination']['pages']) or (page == max_pages):
+                        releases_url = None
+                    else:
+                        page += 1
+                        releases_url = releases_url = 'https://api.discogs.com/artists/{}/releases?page={}&per_page=100'.format(artist_id,page)
 
     with open(save_path/"{}.json".format(artist_name), "w") as outfile:
         json.dump(artist_dict, outfile)
@@ -76,7 +79,10 @@ def download_artist_basics(artist_name, alt_name_list = [], save_path = Path('')
 
 def download_release_details(release):
 
-    release_url = 'https://api.discogs.com/releases/{}'.format(str(release['main_release']))
+    if 'main_release' in list(release.keys()):
+        release_url = 'https://api.discogs.com/releases/{}'.format(str(release['main_release']))
+    else:
+        release_url = release['resource_url']
     client_name = 'jomritman_mubrary'
     max_pages = 10
     max_tries = 5

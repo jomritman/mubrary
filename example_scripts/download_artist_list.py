@@ -3,7 +3,7 @@ from pathlib import Path
 import csv
 import os
 
-library_name = 'jombrary'
+library_name = 'jombrary_ATDI'
 library_path = '/users/jonathanmartin1/documents/python music'
 
 my_library = MusicLibrary(library_name)
@@ -28,7 +28,7 @@ for artist, alt_names in artist_dict.items():
 
     if artist not in my_library.artists:
         my_library.add_artist(artist,alt_names)
-        my_library.filter_artist(artist, want_thresh=13)
+        my_library.filter_artist(artist, want_thresh=8)
         print(artist+'\n')
         if artist in list(my_library.filtered_release_basics.keys()):
             for release in list(my_library.filtered_release_basics[artist].values()):

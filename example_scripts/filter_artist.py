@@ -3,7 +3,7 @@ from pathlib import Path
 from time import time
 
 tic = time()
-library_name = 'jombrary'
+library_name = 'jombrary_ATDI'
 library_path = '/users/jonathanmartin1/documents/python music'
 my_library = MusicLibrary(library_name)
 my_library.set_save_path(library_path)
